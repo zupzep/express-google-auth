@@ -47,7 +47,7 @@ app.get("/auth/google/callback", async (req, res) => {
 
     // Verifikasi ID token
     const ticket = await client.verifyIdToken({
-      idToken: tokens.id_token!,
+      idToken: tokens.id_token,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
     const payload = ticket.getPayload();
@@ -77,4 +77,5 @@ app.get("/auth/google/callback", async (req, res) => {
 });
 
 app.listen(3000, () => console.log("Server running on http://localhost:3000"));
+
 
