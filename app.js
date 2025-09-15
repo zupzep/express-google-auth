@@ -6,6 +6,10 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+if (!process.env.GOOGLE_CLIENT_ID || !process.env.JWT_SECRET) {
+  throw new Error("GOOGLE_CLIENT_ID or JWT_SECRET is not defined in .env");
+}
+
 const app = express();
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -17,14 +21,14 @@ app.use(
 );
 app.use(express.json());
 
-app.get("/", async (req, res) => {
+app.get("/", (req, res) => {
   res.send("test");
 });
 
 // Step 1: Redirect user to Google login
 app.get("/auth/google", (req, res) => {
   const url = client.generateAuthUrl({
-    access_type: "offline", // untuk refresh token
+    access_type: "offline",
     scope: ["profile", "email"],
     redirect_uri: "https://express-google-auth.vercel.app/auth/google/callback",
     prompt: "consent",
@@ -38,14 +42,14 @@ app.get("/auth/google/callback", async (req, res) => {
   if (!code) return res.status(400).send("Missing code");
 
   try {
-    // Tukar code dengan token Google
     const { tokens } = await client.getToken({
       code,
       redirect_uri: "https://express-google-auth.vercel.app/auth/google/callback",
     });
     client.setCredentials(tokens);
 
-    // Verifikasi ID token
+    if (!tokens.id_token) return res.status(401).send("No id_token returned");
+
     const ticket = await client.verifyIdToken({
       idToken: tokens.id_token,
       audience: process.env.GOOGLE_CLIENT_ID,
@@ -54,7 +58,6 @@ app.get("/auth/google/callback", async (req, res) => {
 
     if (!payload) return res.status(401).send("Invalid token");
 
-    // Buat JWT sendiri
     const jwtToken = jwt.sign(
       {
         sub: payload.sub,
@@ -62,13 +65,13 @@ app.get("/auth/google/callback", async (req, res) => {
         name: payload.name,
         picture: payload.picture,
       },
-      process.env.JWT_SECRET!,
+      process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
 
     // Redirect ke FE dengan token
     res.redirect(
-      `https://next-google-auth-bice.vercel.app`
+      `https://next-google-auth-bice.vercel.app/login-success?token=${jwtToken}`
     );
   } catch (err) {
     console.error(err);
@@ -77,5 +80,3 @@ app.get("/auth/google/callback", async (req, res) => {
 });
 
 app.listen(3000, () => console.log("Server running on http://localhost:3000"));
-
-
