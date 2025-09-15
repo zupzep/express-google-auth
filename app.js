@@ -36,7 +36,7 @@ app.post("/auth/google", async (req, res) => {
 
     if (!payload) return res.status(401).json({ message: "Invalid token" });
 
-    const token = jwt.sign(
+    const jwtToken = jwt.sign(
       { 
         sub: payload.sub, 
         email: payload.email, 
@@ -50,7 +50,7 @@ app.post("/auth/google", async (req, res) => {
 
     res.json({ 
       user: payload, 
-      token
+      token: jwtToken
     });
   } catch (err) {
     console.error(err);
@@ -61,4 +61,5 @@ app.post("/auth/google", async (req, res) => {
 });
 
 app.listen(3000, () => console.log("Server running on http://localhost:3000"));
+
 
