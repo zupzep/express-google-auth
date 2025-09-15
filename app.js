@@ -11,7 +11,7 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: "http://localhost:4000",
     credentials: true,
   })
 );
@@ -60,4 +60,5 @@ app.post("/auth/google", async (req, res) => {
   }
 });
 
-app.listen(4000, () => console.log("Server running on http://localhost:4000"));
+app.listen(3000, () => console.log("Server running on http://localhost:3000"));
+
