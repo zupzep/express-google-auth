@@ -34,7 +34,7 @@ app.get("/auth/google", (req, res) => {
 
 // Step 2: Google callback
 app.get("/auth/google/callback", async (req, res) => {
-  const code = req.query.code as string;
+  const code = req.query.code;
   if (!code) return res.status(400).send("Missing code");
 
   try {
@@ -77,3 +77,4 @@ app.get("/auth/google/callback", async (req, res) => {
 });
 
 app.listen(3000, () => console.log("Server running on http://localhost:3000"));
+
