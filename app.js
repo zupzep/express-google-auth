@@ -17,6 +17,10 @@ app.use(
 );
 app.use(express.json());
 
+app.get("/", async (req, res) => {
+  res.send('test');
+});
+
 app.post("/auth/google", async (req, res) => {
   try {
     const { token } = req.body;
