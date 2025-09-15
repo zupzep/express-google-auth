@@ -18,49 +18,62 @@ app.use(
 app.use(express.json());
 
 app.get("/", async (req, res) => {
-  res.send('test');
+  res.send("test");
 });
 
-app.post("/auth/google", async (req, res) => {
-  try {
-    const { token } = req.body;
-    if (!token) return res.status(400).json({ 
-      message: "Token required" 
-    });
+// Step 1: Redirect user to Google login
+app.get("/auth/google", (req, res) => {
+  const url = client.generateAuthUrl({
+    access_type: "offline", // untuk refresh token
+    scope: ["profile", "email"],
+    redirect_uri: "https://express-google-auth.vercel.app/auth/google/callback",
+    prompt: "consent",
+  });
+  res.redirect(url);
+});
 
+// Step 2: Google callback
+app.get("/auth/google/callback", async (req, res) => {
+  const code = req.query.code as string;
+  if (!code) return res.status(400).send("Missing code");
+
+  try {
+    // Tukar code dengan token Google
+    const { tokens } = await client.getToken({
+      code,
+      redirect_uri: "https://express-google-auth.vercel.app/auth/google/callback",
+    });
+    client.setCredentials(tokens);
+
+    // Verifikasi ID token
     const ticket = await client.verifyIdToken({
-      idToken: token,
+      idToken: tokens.id_token!,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
     const payload = ticket.getPayload();
 
-    if (!payload) return res.status(401).json({ message: "Invalid token" });
+    if (!payload) return res.status(401).send("Invalid token");
 
+    // Buat JWT sendiri
     const jwtToken = jwt.sign(
-      { 
-        sub: payload.sub, 
-        email: payload.email, 
-        name: payload.name 
+      {
+        sub: payload.sub,
+        email: payload.email,
+        name: payload.name,
+        picture: payload.picture,
       },
-      process.env.JWT_SECRET,
-      { 
-        expiresIn: "1h" 
-      }
+      process.env.JWT_SECRET!,
+      { expiresIn: "1h" }
     );
 
-    res.json({ 
-      user: payload, 
-      token: jwtToken
-    });
+    // Redirect ke FE dengan token
+    res.redirect(
+      `https://next-google-auth-bice.vercel.app`
+    );
   } catch (err) {
     console.error(err);
-    res.status(500).json({ 
-      message: "Server error" 
-    });
+    res.status(500).send("Google Auth failed");
   }
 });
 
 app.listen(3000, () => console.log("Server running on http://localhost:3000"));
-
-
-
